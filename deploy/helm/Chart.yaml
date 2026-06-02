@@ -1,0 +1,13 @@
+apiVersion: v2
+name: talos
+description: Talos — forge audit / event-stream service
+type: application
+version: 0.1.0
+appVersion: '0.1.0'
+keywords:
+  - audit
+  - events
+  - event-stream
+  - forge
+maintainers:
+  - name: Forge

@@ -1,0 +1,32 @@
+apiVersion: skaffold/v4beta11
+kind: Config
+metadata:
+  name: talos
+
+# Local dev only. `skaffold dev` builds the image and deploys it via Helm
+# to a local cluster. Prod is deployed by the release pipeline using the
+# published OCI chart + image (see deploy/helm/envs/prod/values.yaml).
+profiles:
+  - name: local
+    activation:
+      - command: dev
+    build:
+      artifacts:
+        - image: forge/talos
+          # Context is the forge repo root so the Dockerfile can COPY the
+          # kit module that go.mod's replace directive points at (../../go/kit).
+          context: ../..
+          docker:
+            dockerfile: services/talos/Dockerfile
+    manifests:
+      helm:
+        releases:
+          - name: talos
+            chartPath: deploy/helm
+            valuesFiles:
+              - deploy/helm/envs/local/values.yaml
+            setValueTemplates:
+              image.repository: '{{.IMAGE_REPO_forge_talos}}'
+              image.tag: '{{.IMAGE_TAG_forge_talos}}@{{.IMAGE_DIGEST_forge_talos}}'
+    deploy:
+      helm: {}

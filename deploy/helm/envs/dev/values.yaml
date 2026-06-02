@@ -1,0 +1,15 @@
+replicaCount: 2
+
+database:
+  host: '' # set by the deploy pipeline / env overlay
+  name: talos
+  schema: talos
+  ssl: require
+  existingSecret: talos-db
+
+autoscaling:
+  enabled: false
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1

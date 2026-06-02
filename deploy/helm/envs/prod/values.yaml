@@ -1,0 +1,18 @@
+replicaCount: 3
+
+database:
+  host: '' # set by the deploy pipeline / env overlay
+  name: talos
+  schema: talos
+  ssl: require
+  existingSecret: talos-db
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 75
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2

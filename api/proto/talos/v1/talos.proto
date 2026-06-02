@@ -1,0 +1,130 @@
+syntax = "proto3";
+
+package talos.v1;
+
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+
+// TalosService is the ingest + query surface of the audit/event-stream
+// service. Writes are append-only; there is no update or delete RPC.
+service TalosService {
+  // Append records a single audit event and returns its server-assigned id.
+  rpc Append(AppendRequest) returns (AppendResponse);
+  // AppendStream records a batch of audit events from a client stream and
+  // returns how many were persisted.
+  rpc AppendStream(stream AppendStreamRequest) returns (AppendStreamResponse);
+  // Query returns audit events matching the given filter, newest first.
+  rpc Query(QueryRequest) returns (QueryResponse);
+  // Subscribe streams matching audit events. When replay_from is set the
+  // server first replays matching history (oldest first) and then continues
+  // with live events as they are appended, until the client disconnects.
+  rpc Subscribe(SubscribeRequest) returns (stream SubscribeResponse);
+}
+
+// AuditEvent is one immutable record in the stream.
+message AuditEvent {
+  // id is the server-assigned UUID of the event.
+  string id = 1;
+  // timestamp is when the event occurred (server-defaulted when unset).
+  google.protobuf.Timestamp timestamp = 2;
+  // realm_id is the optional tenant the event belongs to.
+  string realm_id = 3;
+  // actor_id identifies who performed the action.
+  string actor_id = 4;
+  // actor_type classifies the actor (e.g. user, service, system).
+  string actor_type = 5;
+  // resource_type is the kind of resource the action targeted.
+  string resource_type = 6;
+  // resource_id is the id of the resource the action targeted.
+  string resource_id = 7;
+  // action is the verb describing what happened (required).
+  string action = 8;
+  // summary is a short human-readable description of the event.
+  string summary = 9;
+  // changes is a structured before/after diff of the resource.
+  google.protobuf.Struct changes = 10;
+  // metadata is free-form structured context attached by the emitter.
+  google.protobuf.Struct metadata = 11;
+  // ip is the source IP address associated with the action.
+  string ip = 12;
+  // request_id correlates the event with an upstream request.
+  string request_id = 13;
+}
+
+// AppendRequest carries one event to record. id and timestamp are
+// server-assigned when omitted.
+message AppendRequest {
+  // event is the audit event to record.
+  AuditEvent event = 1;
+}
+
+// AppendResponse returns the id assigned to the recorded event.
+message AppendResponse {
+  // id is the server-assigned UUID of the recorded event.
+  string id = 1;
+}
+
+// AppendStreamRequest carries one event in an append stream. id and
+// timestamp are server-assigned when omitted.
+message AppendStreamRequest {
+  // event is the audit event to record.
+  AuditEvent event = 1;
+}
+
+// AppendStreamResponse summarises a completed append stream.
+message AppendStreamResponse {
+  // count is the number of events persisted by the stream.
+  uint32 count = 1;
+}
+
+// QueryRequest filters the event stream. All fields are optional; empty
+// fields are not constrained.
+message QueryRequest {
+  // actor_id filters to events performed by this actor.
+  string actor_id = 1;
+  // resource_type filters to events targeting this resource kind.
+  string resource_type = 2;
+  // resource_id filters to events targeting this resource id.
+  string resource_id = 3;
+  // action filters to events with this action verb.
+  string action = 4;
+  // from bounds the result set to events at or after this time.
+  google.protobuf.Timestamp from = 5;
+  // to bounds the result set to events at or before this time.
+  google.protobuf.Timestamp to = 6;
+  // limit caps the number of returned events.
+  uint32 limit = 7;
+}
+
+// QueryResponse carries the matched events.
+message QueryResponse {
+  // events are the matched audit events, newest first.
+  repeated AuditEvent events = 1;
+  // total_count is the number of events matching the filter.
+  uint32 total_count = 2;
+}
+
+// SubscribeRequest filters the live stream. All filter fields are optional;
+// empty fields are not constrained. When replay_from is set, matching history
+// from that time is replayed (oldest first) before the live tail begins.
+message SubscribeRequest {
+  // actor_id filters to events performed by this actor.
+  string actor_id = 1;
+  // resource_type filters to events targeting this resource kind.
+  string resource_type = 2;
+  // resource_id filters to events targeting this resource id.
+  string resource_id = 3;
+  // action filters to events with this action verb.
+  string action = 4;
+  // replay_from, when set, replays matching history at or after this time
+  // before switching to the live tail.
+  google.protobuf.Timestamp replay_from = 5;
+  // replay_limit caps the number of replayed history events.
+  uint32 replay_limit = 6;
+}
+
+// SubscribeResponse carries one streamed audit event.
+message SubscribeResponse {
+  // event is the streamed audit event (replayed or live).
+  AuditEvent event = 1;
+}

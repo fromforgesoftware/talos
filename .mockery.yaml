@@ -1,0 +1,15 @@
+disable-version-string: true
+with-expecter: true
+filename: '{{.InterfaceName | snakecase}}_mock.go'
+mockname: '{{.InterfaceName}}'
+outpkg: 'apptest'
+dir: 'internal/app/apptest'
+all: false
+packages:
+  github.com/fromforgesoftware/talos/internal/app:
+    interfaces:
+      AuditEventRepository:
+      AuditEventUsecase:
+      Forwarder:
+      PartitionStore:
+      RetentionSweeper:

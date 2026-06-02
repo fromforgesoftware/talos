@@ -1,0 +1,29 @@
+replicaCount: 1
+
+image:
+  pullPolicy: IfNotPresent
+
+database:
+  host: postgres
+  port: '5432'
+  name: forge
+  schema: talos
+  ssl: disable
+  username: forge
+  password: forge
+
+autoscaling:
+  enabled: false
+
+podDisruptionBudget:
+  enabled: false
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    cpu: '1'
+    memory: 512Mi
+
+gatewaySecret: dev-forge-gateway-secret
