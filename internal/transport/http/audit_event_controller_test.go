@@ -41,13 +41,18 @@ func TestParseOrigins(t *testing.T) {
 }
 
 func TestOriginAllowed(t *testing.T) {
-	// Empty allow-list permits any origin (dev default).
-	assert.True(t, originAllowed(nil, "https://anything.io"))
+	// Secure by default: an empty allow-list denies every origin.
+	assert.False(t, originAllowed(nil, false, "https://anything.io"))
+	// Explicit insecure opt-out permits any origin when no allow-list is set.
+	assert.True(t, originAllowed(nil, true, "https://anything.io"))
 
 	allowed := []string{"https://console.example.com"}
-	assert.True(t, originAllowed(allowed, "https://console.example.com"))
-	assert.False(t, originAllowed(allowed, "https://evil.example.com"))
-	assert.False(t, originAllowed(allowed, ""))
+	// A configured allow-list is enforced exactly, regardless of the insecure flag.
+	assert.True(t, originAllowed(allowed, false, "https://console.example.com"))
+	assert.True(t, originAllowed(allowed, true, "https://console.example.com"))
+	assert.False(t, originAllowed(allowed, false, "https://evil.example.com"))
+	assert.False(t, originAllowed(allowed, true, "https://evil.example.com"))
+	assert.False(t, originAllowed(allowed, false, ""))
 }
 
 func TestFilterFromData(t *testing.T) {

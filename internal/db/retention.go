@@ -2,7 +2,9 @@ package db
 
 import (
 	"context"
+	"fmt"
 	"regexp"
+	"time"
 
 	"github.com/fromforgesoftware/go-kit/persistence/gormdb"
 	"github.com/fromforgesoftware/go-kit/persistence/postgres"
@@ -51,6 +53,35 @@ func (r *partitionRepo) DropPartition(ctx context.Context, name string) error {
 		return postgres.NewErrUnknown(errInvalidPartition{name})
 	}
 	if err := r.db.WithContext(ctx).Exec("DROP TABLE IF EXISTS talos." + name).Error; err != nil {
+		return postgres.NewErrUnknown(err)
+	}
+	return nil
+}
+
+// EnsureMonthlyPartition creates the monthly partition covering month (any time
+// within the target UTC month) if it does not already exist. It is a no-op when
+// the partition is present, so it is safe to call repeatedly at startup and on
+// the retention ticker. The CREATE ... PARTITION OF carries explicit FROM/TO
+// bounds for the month so rows land here rather than in the DEFAULT catch-all.
+//
+// Identifiers and bounds are derived from a validated name and time.Time (never
+// from user input), so the interpolation cannot inject DDL.
+func (r *partitionRepo) EnsureMonthlyPartition(ctx context.Context, month time.Time) error {
+	month = month.UTC()
+	start := time.Date(month.Year(), month.Month(), 1, 0, 0, 0, 0, time.UTC)
+	end := start.AddDate(0, 1, 0)
+	name := fmt.Sprintf("audit_event_%04d_%02d", start.Year(), int(start.Month()))
+	if !partitionName.MatchString(name) {
+		return postgres.NewErrUnknown(errInvalidPartition{name})
+	}
+	// IF NOT EXISTS keeps this idempotent and free of a check-then-create race.
+	stmt := fmt.Sprintf(
+		"CREATE TABLE IF NOT EXISTS talos.%s PARTITION OF talos.audit_event FOR VALUES FROM ('%s') TO ('%s')",
+		name,
+		start.Format("2006-01-02 15:04:05-07"),
+		end.Format("2006-01-02 15:04:05-07"),
+	)
+	if err := r.db.WithContext(ctx).Exec(stmt).Error; err != nil {
 		return postgres.NewErrUnknown(err)
 	}
 	return nil

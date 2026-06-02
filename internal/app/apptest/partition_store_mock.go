@@ -4,6 +4,7 @@ package apptest
 
 import (
 	context "context"
+	time "time"
 
 	mock "github.com/stretchr/testify/mock"
 )
@@ -64,6 +65,53 @@ func (_c *PartitionStore_DropPartition_Call) Return(_a0 error) *PartitionStore_D
 }
 
 func (_c *PartitionStore_DropPartition_Call) RunAndReturn(run func(context.Context, string) error) *PartitionStore_DropPartition_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// EnsureMonthlyPartition provides a mock function with given fields: ctx, month
+func (_m *PartitionStore) EnsureMonthlyPartition(ctx context.Context, month time.Time) error {
+	ret := _m.Called(ctx, month)
+
+	if len(ret) == 0 {
+		panic("no return value specified for EnsureMonthlyPartition")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, time.Time) error); ok {
+		r0 = rf(ctx, month)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// PartitionStore_EnsureMonthlyPartition_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'EnsureMonthlyPartition'
+type PartitionStore_EnsureMonthlyPartition_Call struct {
+	*mock.Call
+}
+
+// EnsureMonthlyPartition is a helper method to define mock.On call
+//   - ctx context.Context
+//   - month time.Time
+func (_e *PartitionStore_Expecter) EnsureMonthlyPartition(ctx interface{}, month interface{}) *PartitionStore_EnsureMonthlyPartition_Call {
+	return &PartitionStore_EnsureMonthlyPartition_Call{Call: _e.mock.On("EnsureMonthlyPartition", ctx, month)}
+}
+
+func (_c *PartitionStore_EnsureMonthlyPartition_Call) Run(run func(ctx context.Context, month time.Time)) *PartitionStore_EnsureMonthlyPartition_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(time.Time))
+	})
+	return _c
+}
+
+func (_c *PartitionStore_EnsureMonthlyPartition_Call) Return(_a0 error) *PartitionStore_EnsureMonthlyPartition_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *PartitionStore_EnsureMonthlyPartition_Call) RunAndReturn(run func(context.Context, time.Time) error) *PartitionStore_EnsureMonthlyPartition_Call {
 	_c.Call.Return(run)
 	return _c
 }

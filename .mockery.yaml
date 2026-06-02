@@ -12,4 +12,5 @@ packages:
       AuditEventUsecase:
       Forwarder:
       PartitionStore:
+      PartitionProvisioner:
       RetentionSweeper:

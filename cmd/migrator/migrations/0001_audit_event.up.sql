@@ -15,10 +15,21 @@ CREATE TABLE talos.audit_event (
     PRIMARY KEY (id, timestamp)
 ) PARTITION BY RANGE (timestamp);
 
+-- Bootstrap partitions. From here on the application's partition-maintenance
+-- routine (internal/app.PartitionProvisioner, run at startup and on the 6h
+-- maintenance ticker in internal/module.go) creates each upcoming month's
+-- partition before events for it arrive, so rows never fall into the DEFAULT
+-- catch-all in normal operation.
 CREATE TABLE talos.audit_event_2026_05 PARTITION OF talos.audit_event
     FOR VALUES FROM ('2026-05-01 00:00:00+00') TO ('2026-06-01 00:00:00+00');
 CREATE TABLE talos.audit_event_2026_06 PARTITION OF talos.audit_event
     FOR VALUES FROM ('2026-06-01 00:00:00+00') TO ('2026-07-01 00:00:00+00');
+
+-- DEFAULT catch-all retained as a safety net for any event that races ahead of
+-- the maintenance routine (e.g. an event for month N+2). Such rows would NOT be
+-- dropped by retention (it only matches audit_event_YYYY_MM), so operators
+-- should alert on a non-empty audit_event_default and drain it into the correct
+-- monthly partition.
 CREATE TABLE talos.audit_event_default PARTITION OF talos.audit_event DEFAULT;
 
 CREATE INDEX idx_audit_event_metadata ON talos.audit_event USING GIN (metadata);

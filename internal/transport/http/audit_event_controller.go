@@ -28,15 +28,18 @@ type AuditEventController struct {
 
 func NewAuditEventController(events app.AuditEventUsecase, validator jwt.Validator) kitrest.Controller {
 	// Cross-site WebSocket hijacking guard: only the origins in
-	// TALOS_WS_ALLOWED_ORIGINS may open the live tail. Unset = allow all
-	// (dev default), so local tooling still connects with no config.
+	// TALOS_WS_ALLOWED_ORIGINS may open the live tail. Secure by default —
+	// when no allow-list is configured every origin is denied, unless the
+	// operator explicitly opts into the insecure posture with
+	// TALOS_WS_ALLOW_INSECURE=1 (development only), which allows all origins.
 	allowed := parseOrigins(os.Getenv("TALOS_WS_ALLOWED_ORIGINS"))
+	allowInsecure := os.Getenv("TALOS_WS_ALLOW_INSECURE") == "1"
 	return &AuditEventController{
 		events:    events,
 		validator: validator,
 		upgrader: gws.Upgrader{
 			CheckOrigin: func(r *http.Request) bool {
-				return originAllowed(allowed, r.Header.Get("Origin"))
+				return originAllowed(allowed, allowInsecure, r.Header.Get("Origin"))
 			},
 		},
 	}

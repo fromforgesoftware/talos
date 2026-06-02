@@ -88,6 +88,12 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 - name: TALOS_WS_ALLOWED_ORIGINS
   value: {{ . | quote }}
 {{- end }}
+{{- if .Values.wsAllowInsecure }}
+# Opt out of secure-by-default WS auth (no HMAC secret + allow all origins).
+# Intended for local/dev only; prod must set streamHmacSecret instead.
+- name: TALOS_WS_ALLOW_INSECURE
+  value: "1"
+{{- end }}
 {{- if .Values.gatewaySecret }}
 - name: FORGE_GATEWAY_SECRET
   value: {{ .Values.gatewaySecret | quote }}

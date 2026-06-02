@@ -27,3 +27,6 @@ resources:
     memory: 512Mi
 
 gatewaySecret: dev-forge-gateway-secret
+
+# Local dev: run the live-tail without an HMAC secret / origin allowlist.
+wsAllowInsecure: true

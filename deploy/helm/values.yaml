@@ -91,9 +91,15 @@ retentionMonths: 6
 
 # Shared HMAC secret signing WebSocket live-tail bearer tokens. When set, the
 # chart creates a <fullname>-stream secret and the server requires a valid
-# HMAC JWT to open /api/audit-events/stream. Empty = stream auth disabled.
+# HMAC JWT to open /api/audit-events/stream. Empty + wsAllowInsecure=false
+# (the default) makes the server REFUSE TO START — prod must set this.
 streamHmacSecret: ''
 
 # Comma-separated list of origins allowed to open the live-tail WebSocket
-# (cross-site WS hijacking guard). Empty = allow all (dev default).
+# (cross-site WS hijacking guard). Empty = deny all origins (secure default).
 wsAllowedOrigins: ''
+
+# Opt out of secure-by-default WS auth: run with no HMAC secret and allow all
+# origins. Local/dev convenience ONLY — leave false in prod and set
+# streamHmacSecret instead.
+wsAllowInsecure: false

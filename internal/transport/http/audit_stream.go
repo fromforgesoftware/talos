@@ -273,7 +273,8 @@ func replayParamsFromData(data any) (*time.Time, int) {
 }
 
 // parseOrigins splits a comma-separated allow-list, trimming blanks. An empty
-// input yields nil, which originAllowed treats as "allow all".
+// input yields nil — origins are then denied unless the insecure posture is
+// explicitly enabled (see originAllowed).
 func parseOrigins(raw string) []string {
 	var out []string
 	for _, o := range strings.Split(raw, ",") {
@@ -284,12 +285,14 @@ func parseOrigins(raw string) []string {
 	return out
 }
 
-// originAllowed reports whether a request Origin may open the live tail. An
-// empty allow-list permits any origin (dev default); otherwise the origin must
-// match an entry exactly. Pure — unit-tested.
-func originAllowed(allowed []string, origin string) bool {
+// originAllowed reports whether a request Origin may open the live tail.
+// Secure by default: an empty allow-list denies every origin, unless
+// allowInsecure is set (the explicit TALOS_WS_ALLOW_INSECURE=1 dev opt-out),
+// which permits any origin. With a non-empty allow-list the origin must match
+// an entry exactly regardless of allowInsecure. Pure — unit-tested.
+func originAllowed(allowed []string, allowInsecure bool, origin string) bool {
 	if len(allowed) == 0 {
-		return true
+		return allowInsecure
 	}
 	for _, a := range allowed {
 		if origin == a {
