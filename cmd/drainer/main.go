@@ -3,10 +3,11 @@
 // audit event to Talos over gRPC, keeping producers decoupled from Talos.
 //
 // Config (env):
-//   OUTBOX_DB_URL    Postgres URL of the producer DB holding the outbox table.
-//   OUTBOX_TABLE     Fully-qualified outbox table (default "aegis.outbox").
-//   TALOS_GRPC_ADDR  Talos gRPC address (default "talos:9090").
-//   DRAIN_INTERVAL   Poll interval (default 5s).
+//
+//	OUTBOX_DB_URL    Postgres URL of the producer DB holding the outbox table.
+//	OUTBOX_TABLE     Fully-qualified outbox table (default "aegis.outbox").
+//	TALOS_GRPC_ADDR  Talos gRPC address (default "talos:9090").
+//	DRAIN_INTERVAL   Poll interval (default 5s).
 package main
 
 import (
@@ -59,7 +60,7 @@ func main() {
 		log.Error("talos dial failed", "error", err)
 		os.Exit(1)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 	sink := talosaudit.NewSink(talosclient.New(conn))
 
 	repo := outboxpg.New(db, envOr("OUTBOX_TABLE", "aegis.outbox"))

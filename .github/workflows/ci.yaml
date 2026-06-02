@@ -8,19 +8,59 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          path: talos
-      - uses: actions/checkout@v4
-        with:
-          repository: fromforgesoftware/go-kit
-          path: go-kit
       - uses: actions/setup-go@v5
         with:
-          go-version-file: talos/go.mod
-      - name: build + vet + test (go-kit via workspace)
+          go-version-file: go.mod
+      # Build/test against the PINNED published go-kit (resolved from the Go
+      # module proxy via go.mod), not a sibling checkout of go-kit's main
+      # branch. This makes CI exercise the actually-released dependency.
+      - name: build + vet + test
         run: |
-          cd talos
-          go work init . ../go-kit
           go build ./...
           go vet ./...
           go test ./...
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: v2.1.1
+
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      # The //go:build integration suites provision their own Postgres
+      # (postgres:14.6-alpine) at runtime through go-kit's gormdbtest +
+      # gnomock helper, which talks directly to the Docker daemon and sets
+      # the DB_* env itself. GitHub-hosted ubuntu runners ship a running
+      # Docker daemon, so no `services:` container is needed (and one would
+      # be unused — the tests do not read an external DSN).
+      - name: integration tests
+        run: go test -tags=integration ./...
+
+  buf:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bufbuild/buf-action@v1
+        with:
+          setup_only: true
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      # Regenerate from api/proto + buf.gen.yaml and fail if the committed
+      # generated code (pkg/api) is stale.
+      - name: buf generate drift check
+        run: |
+          buf generate
+          git diff --exit-status
