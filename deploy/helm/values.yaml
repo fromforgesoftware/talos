@@ -84,3 +84,16 @@ affinity: {}
 # Shared HMAC secret gating /api admin routes to the Foundry gateway
 # (empty = open). Must match across Foundry and the products it manages.
 gatewaySecret: ''
+
+# How many months of audit events to retain. The retention sweeper drops
+# partitions older than this; 0 disables retention.
+retentionMonths: 6
+
+# Shared HMAC secret signing WebSocket live-tail bearer tokens. When set, the
+# chart creates a <fullname>-stream secret and the server requires a valid
+# HMAC JWT to open /api/audit-events/stream. Empty = stream auth disabled.
+streamHmacSecret: ''
+
+# Comma-separated list of origins allowed to open the live-tail WebSocket
+# (cross-site WS hijacking guard). Empty = allow all (dev default).
+wsAllowedOrigins: ''

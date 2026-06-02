@@ -1,52 +1,52 @@
-{{- define "hallmark.name" -}}
+{{- define "talos.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
-{{- define "hallmark.fullname" -}}
+{{- define "talos.fullname" -}}
 {{- if .Values.fullnameOverride -}}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" -}}
 {{- else -}}
-{{- printf "%s-%s" .Release.Name (include "hallmark.name" .) | trunc 63 | trimSuffix "-" -}}
+{{- printf "%s-%s" .Release.Name (include "talos.name" .) | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 {{- end -}}
 
-{{- define "hallmark.labels" -}}
+{{- define "talos.labels" -}}
 helm.sh/chart: {{ printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
-{{ include "hallmark.selectorLabels" . }}
+{{ include "talos.selectorLabels" . }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 app.kubernetes.io/part-of: forge
 {{- end -}}
 
-{{- define "hallmark.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "hallmark.name" . }}
+{{- define "talos.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "talos.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end -}}
 
-{{- define "hallmark.serviceAccountName" -}}
+{{- define "talos.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create -}}
-{{- default (include "hallmark.fullname" .) .Values.serviceAccount.name -}}
+{{- default (include "talos.fullname" .) .Values.serviceAccount.name -}}
 {{- else -}}
 {{- default "default" .Values.serviceAccount.name -}}
 {{- end -}}
 {{- end -}}
 
-{{- define "hallmark.image" -}}
+{{- define "talos.image" -}}
 {{- printf "%s:%s" .Values.image.repository (.Values.image.tag | default .Chart.AppVersion) -}}
 {{- end -}}
 
-{{- define "hallmark.dbSecretName" -}}
+{{- define "talos.dbSecretName" -}}
 {{- if .Values.database.existingSecret -}}
 {{- .Values.database.existingSecret -}}
 {{- else -}}
-{{- printf "%s-db" (include "hallmark.fullname" .) -}}
+{{- printf "%s-db" (include "talos.fullname" .) -}}
 {{- end -}}
 {{- end -}}
 
 {{/* Shared env block for server + migrator. */}}
-{{- define "hallmark.env" -}}
+{{- define "talos.env" -}}
 - name: SVC_NAME
-  value: {{ include "hallmark.name" . | quote }}
+  value: {{ include "talos.name" . | quote }}
 - name: REST_ADDRESS
   value: ":{{ .Values.ports.http }}"
 - name: HTTP_ADDRESS
@@ -68,13 +68,26 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 - name: DB_USER
   valueFrom:
     secretKeyRef:
-      name: {{ include "hallmark.dbSecretName" . }}
+      name: {{ include "talos.dbSecretName" . }}
       key: DB_USER
 - name: DB_PASSWORD
   valueFrom:
     secretKeyRef:
-      name: {{ include "hallmark.dbSecretName" . }}
+      name: {{ include "talos.dbSecretName" . }}
       key: DB_PASSWORD
+- name: TALOS_RETENTION_MONTHS
+  value: {{ .Values.retentionMonths | default 6 | quote }}
+{{- if .Values.streamHmacSecret }}
+- name: TALOS_STREAM_HMAC_SECRET
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "talos.fullname" . }}-stream
+      key: TALOS_STREAM_HMAC_SECRET
+{{- end }}
+{{- with .Values.wsAllowedOrigins }}
+- name: TALOS_WS_ALLOWED_ORIGINS
+  value: {{ . | quote }}
+{{- end }}
 {{- if .Values.gatewaySecret }}
 - name: FORGE_GATEWAY_SECRET
   value: {{ .Values.gatewaySecret | quote }}

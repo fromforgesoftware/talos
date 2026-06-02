@@ -13,11 +13,12 @@ profiles:
     build:
       artifacts:
         - image: forge/talos
-          # Context is the forge repo root so the Dockerfile can COPY the
-          # kit module that go.mod's replace directive points at (../../go/kit).
-          context: ../..
+          # Standalone repo: the module is at the repo root and consumes the
+          # published go-kit pinned in go.mod (no replace), so the build context
+          # is this repo and the Dockerfile sits at its root.
+          context: .
           docker:
-            dockerfile: services/talos/Dockerfile
+            dockerfile: Dockerfile
     manifests:
       helm:
         releases:
