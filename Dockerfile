@@ -3,7 +3,8 @@
 # published go-kit pinned in go.mod (no replace directive), so the build
 # context is this repo.
 ARG GO_VERSION=1.25
-FROM golang:${GO_VERSION}-alpine AS builder
+FROM --platform=$BUILDPLATFORM golang:${GO_VERSION}-alpine AS builder
+ARG TARGETOS TARGETARCH
 WORKDIR /src
 
 # Pull dependencies first so they cache across source changes.
@@ -13,9 +14,9 @@ RUN go mod download
 
 # Build everything from the module root.
 COPY . .
-RUN CGO_ENABLED=0 go build -trimpath -o /out/server   ./cmd/server
-RUN CGO_ENABLED=0 go build -trimpath -o /out/migrator ./cmd/migrator
-RUN CGO_ENABLED=0 go build -trimpath -o /out/drainer  ./cmd/drainer
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -o /out/server   ./cmd/server
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -o /out/migrator ./cmd/migrator
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -o /out/drainer  ./cmd/drainer
 
 FROM gcr.io/distroless/static-debian12:nonroot
 COPY --from=builder /out/server   /app/server
